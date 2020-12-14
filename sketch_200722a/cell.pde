@@ -1,8 +1,10 @@
 class cell{
   
-  float x,y,r = 10,max = Max;
+  float x,y,r = 10,max = Max,minx = 1000000,miny = 1000000,maxx,maxy;
   int id,S1,range,gid,xpos, ypos,round,count,r1;
   color col =  color(random(255),random(255),random(255));
+  ArrayList<cell> vertices = new ArrayList<cell>();
+  ArrayList<Line> edges = new ArrayList<Line>();
   ArrayList<cell> closestN = new ArrayList<cell>();
   ArrayList<cell> radiusN = new ArrayList<cell>();
   ArrayList<cell> radiusND = new ArrayList<cell>();
@@ -17,12 +19,22 @@ class cell{
   ArrayList<cell>neighboursD = new ArrayList<cell>();
   ArrayList<cell>history = new ArrayList<cell>();
   ArrayList<cell>temp = new ArrayList<cell>();
-  boolean step1,step2,noPaths;
-  HashMap<cell,Boolean> countedBy = new HashMap<cell,Boolean>();
+  ArrayList<cell>countedBy = new ArrayList<cell>();
+  boolean step1,step2,noPaths,topLeft,top,topRight,right,btmRight,btm,btmLeft,left,center,straggler,stragglerC;
+  //HashMap<cell,Boolean> countedBy = new HashMap<cell,Boolean>();
+  
+  PVector midPoint,p1,p2,p3;
   
   cell(int id_,float x_,float y_){
     x = x_;
     y = y_;
+    id = id_;
+    getPos();
+  };
+  
+  cell(int id_,PVector p){
+    x = p.x;
+    y = p.y;
     id = id_;
     getPos();
   };
@@ -57,7 +69,7 @@ class cell{
           if(!radiusN.contains(c)){
               radiusN.add(c);
               tradiusN.add(c);
-              c.countedBy.put(this,true);
+              //c.countedBy.put(this,true);
       }}}max += 50;
     //} 
   };
@@ -115,7 +127,113 @@ class cell{
     }
   };
   
-  void sortconnections(){
+  void findMidPoint(){
+    
+    midPoint = new PVector(0,0);
+    for(int i=0;i<tconnections.size();i++){
+      cell c = tconnections.get(i);
+      midPoint.add(new PVector(c.x,c.y));
+      if(c.x<minx)minx=c.x;
+      if(c.y<miny)miny=c.y;
+      if(c.x>maxx)maxx=c.x;
+      if(c.y>maxy)maxy=c.y;
+    }
+    
+    midPoint.div(tconnections.size());
+    
+    if(x>minx&&x<maxx&&y>miny&&y<maxy)center = true;
+    if(x<minx&&y<miny)topLeft = true;
+    if(x>minx&&x<maxx&&y<miny)top = true;
+    if(x>maxx&&y<miny)topRight = true;
+    if(x>maxx&&y>miny&&y<maxy)right = true;
+    if(x>maxx&&y<maxy)btmRight = true;
+    if(x>minx&&x<maxx&&y>maxy)btm = true;
+    if(x<minx&&y>maxy)btmLeft = true;
+    if(x<minx&&y>miny&&y<maxy)left = true;
+    
+    if(center)
+    for(int i=0;i<tconnections.size();i++){
+      cell c = tconnections.get(i);
+      midPoint.add(new PVector(c.x,c.y));
+      if(c.x<minx)minx=c.x;
+      if(c.y<miny)miny=c.y;
+      if(c.x>maxx)maxx=c.x;
+      if(c.y>maxy)maxy=c.y;
+      Line a = new Line(this,c);
+      boolean k = false;
+      //if(c
+      for(int j=0;j<sconnections.size();j++){
+        cell c1 = sconnections.get(j);
+        cell c2 = null;
+        
+        if(j<sconnections.size()-1)c2 = sconnections.get(j+1);
+        else c2 = sconnections.get(0);
+        Line b = new Line(c1,c2);
+        PVector p = checkIntersect(a,b);
+        if(p!=null){
+          center = false;
+          k = true;
+          break;
+        }
+      }
+      if(k)break;
+    }
+  };
+  
+  void debugMidPoint(){
+    
+    midPoint = new PVector(0,0);
+    for(int i=0;i<tconnections.size();i++){
+      cell c = tconnections.get(i);
+      midPoint.add(new PVector(c.x,c.y));
+      if(c.x<minx)minx=c.x;
+      if(c.y<miny)miny=c.y;
+      if(c.x>maxx)maxx=c.x;
+      if(c.y>maxy)maxy=c.y;
+    }
+    
+    midPoint.div(tconnections.size());
+    
+    if(x>minx&&x<maxx&&y>miny&&y<maxy)center = true;
+    if(x<minx&&y<miny)topLeft = true;
+    if(x>minx&&x<maxx&&y<miny)top = true;
+    if(x>maxx&&y<miny)topRight = true;
+    if(x>maxx&&y>miny&&y<maxy)right = true;
+    if(x>maxx&&y<maxy)btmRight = true;
+    if(x>minx&&x<maxx&&y>maxy)btm = true;
+    if(x<minx&&y>maxy)btmLeft = true;
+    if(x<minx&&y>miny&&y<maxy)left = true;
+    
+    //if(center)
+    for(int i=0;i<sconnections.size();i++){
+      cell c = sconnections.get(i);
+      midPoint.add(new PVector(c.x,c.y));
+      if(c.x<minx)minx=c.x;
+      if(c.y<miny)miny=c.y;
+      if(c.x>maxx)maxx=c.x;
+      if(c.y>maxy)maxy=c.y;
+      Line a = new Line(this,c);
+      boolean k = false;
+      //if(c
+      for(int j=0;j<sconnections.size();j++){
+        cell c1 = sconnections.get(j);
+        cell c2 = null;
+        
+        if(j<sconnections.size()-1)c2 = sconnections.get(j+1);
+        else c2 = sconnections.get(0);
+        Line b = new Line(c1,c2);
+        PVector p = checkIntersect2(a,b);
+        if(p!=null){
+          center = false;
+          k = true;
+          //break;
+        }
+      }
+      //if(k)break;
+    }
+  };
+  
+  void sortConnections(){
     temp = new ArrayList<cell>();
     sconnections = new ArrayList<cell>();
     for(int i=0;i<tconnections.size();i++){
@@ -154,7 +272,7 @@ class cell{
     }
   };
   
-  void sortconnectionsTheta(){
+  void sortConnectionsTheta(){
     temp = new ArrayList<cell>();
     sconnections = new ArrayList<cell>();
     for(int i=0;i<tconnections.size();i++){
@@ -201,37 +319,8 @@ class cell{
         //for(int j=0;j<c.neighboursD.size();j++){
         //  cell c1 = c.neighboursD.get(j);
           Line a = new Line(c,this);
-          for(int k=0;k<c.sconnections.size();k++){
-            cell c1 = c.sconnections.get(k);
-            
-            for(int l=0;l<c1.tconnections.size();l++){
-              cell c2 = c1.tconnections.get(l);
-              Line b = new Line(c1,c2);
-              
-              if(c2!=this){
-                PVector p = checkIntersect(a,b);
-                if(p!=null){
-                  
-                  k1 = true;
-                  break;
-                }
-              }
-            }
-            if(k1)break;
-            //save("pic.tif");
-          }
+
           
-          //for(int k=0;k<sconnections.size();k++){
-          //  cell c1 = sconnections.get(k);
-          //  Line b = new Line(c1,c);
-          //  if(c1!=this){
-          //      PVector p = checkIntersect(a,b);
-          //      if(p!=null){
-          //        k1 = true;
-          //        break;
-          //      }
-          //    }
-          //}
           for(int i= 0;i<tconnections.size();i++){
             cell c1 = tconnections.get(i);
             for(int k=0;k<c1.tconnections.size();k++){
@@ -239,15 +328,12 @@ class cell{
               Line b = new Line(c2,c1);
               PVector p = checkIntersect(a,b);
               if(p!=null){
-                //if(!failed.contains(d))failed.add(d);
                   k2 = true;
-                  
-                  
                   break;
-              //}
             }}
             if(k2){
-              count ++;
+              //count ++;
+              
               break;
             }
           }
@@ -255,10 +341,6 @@ class cell{
             //println("tsize",tconnections.size(),rounds,k1,k2);
             if(!k2&&!k1){
               count++;
-              //println("cp",connections.size(),rounds,connections.size()<rounds,id);
-              //closestN.add(d);
-              //if(!linePair[d.id].contains(this))linePair[d.id].add(this);
-              //if(!linePair[id].contains(d))linePair[id].add(d);
               if(!tconnections.contains(c)){
                 connections.add(c);
                 tconnections.add(c);
@@ -266,65 +348,122 @@ class cell{
               }
               if(!c.tconnections.contains(this)){
                 c.tconnections.add(this);
-                //c.sortconnections();
-                if(c.tconnections.size()>rounds){
-                  //rounds++;
-                  //c.r1++;
-                  
-                }
-                //c.connections.add(this);
               }
+              if(!linePair[c.id].contains(this))linePair[c.id].add(this);
+              if(!linePair[id].contains(c))linePair[id].add(c);
               if(!lines.get(c).contains(this)&&!lines.get(this).contains(c))lines.get(this).add(c);
+            }else{
+              if(!failed.contains(c))failed.add(c);
             }
             
         }
-    if(count==radiusN.size()&&r1>5)noPaths = true;
+    if(count==0&&radiusN.size()>0)noPaths = true;
     //println("count",count,radiusN.size());
   };
   
-  void trim(){
-    frameRate(1);
-    for(int j=tconnections.size()-1;j>-1;j--){
-          cell c = tconnections.get(j);
-          boolean k1 = false;
-        //for(int j=0;j<c.neighboursD.size();j++){
-        //  cell c1 = c.neighboursD.get(j);
-          Line a = new Line(c,this);
-          for(int k=0;k<tconnections.size();k++){
-            cell c1 = tconnections.get(k);
-            
-            for(int l=0;l<c1.tconnections.size();l++){
-              cell c2 = c1.tconnections.get(l);
-              Line b = new Line(c1,c2);
-              
-              if(c2!=this){
-                PVector p = checkIntersect(a,b);
-                if(p!=null){
-                  
+  void connectStragglers(){
+    for(int i=0;i<sconnections.size();i++){
+      cell c = sconnections.get(i);
+      cell c1 = null;
+      if(i<sconnections.size()-1)c1 = sconnections.get(i+1);
+      else c1 = sconnections.get(0);
+      
+      boolean k1 = false;
+      Line a = new Line(c,c1);
+      println("straglers",stragglers.size());
+      if(!lines.get(c).contains(c1)&&!lines.get(c1).contains(c)){
+        for(int j= 0;j<c.tconnections.size();j++){
+            cell c2 = c.tconnections.get(j);
+            for(int k=0;k<c2.tconnections.size();k++){
+              cell c3 = c2.tconnections.get(k);
+              Line b = new Line(c2,c3);
+              PVector p = checkIntersect(a,b);
+              if(p!=null){
                   k1 = true;
                   break;
-                }
-              }
+            }}
+            if(k1){
+              break;
             }
-            if(k1)break;
-            //save("pic.tif");
           }
-          if(k1){
-            tconnections.remove(c);
-            int pos = c.tconnections.indexOf(this);
-            c.tconnections.remove(pos);
+          if(!k1)
+          for(int j= 0;j<c1.tconnections.size();j++){
+            cell c2 = c1.tconnections.get(j);
+            for(int k=0;k<c2.tconnections.size();k++){
+              cell c3 = c2.tconnections.get(k);
+              Line b = new Line(c2,c3);
+              PVector p = checkIntersect(a,b);
+              if(p!=null){
+                  k1 = true;
+                  break;
+            }}
+            if(k1){
+              break;
+            }
+          }
+          if(!k1)
+        for(int j=0;j<stragglers.size();j++){
+          Line b = stragglers.get(j);
+          PVector p = checkIntersect(a,b);
+          if(p!=null){
+            k1 = true;
+            break;
           }
           
         }
-        frameRate(60);
+        if(!k1){
+          if(!linePair[c.id].contains(c1))linePair[c.id].add(c1);
+          if(!linePair[c1.id].contains(c))linePair[c1.id].add(c);
+          
+          if(!c.tconnections.contains(c1))c.tconnections.add(c1);
+          if(!c1.tconnections.add(c))c1.tconnections.add(c);
+          lines.get(c1).add(c);
+          stragglers.add(a);
+          straggler = true;
+          c.stragglerC = true;
+          c1.stragglerC = true;
+        }
+      }
+    }
   };
   
+  void convertToTriangle(){
+    for(int i=0;i<tconnections.size();i++){
+      cell c = tconnections.get(i);
+      ArrayList<cell> temp = new ArrayList<cell>();
+      for(int j=0;j<c.tconnections.size();j++){
+        cell c1 = c.tconnections.get(j);
+        
+        if(c1.tconnections.contains(this)){
+          temp.add(c1);
+        }
+      }
+      
+      if(temp.size()==2){
+        PVector p1 = new PVector((x+c.x+temp.get(0).x)/3,(y+c.y+temp.get(0).y)/3);
+        PVector p2 = new PVector((x+c.x+temp.get(1).x)/3,(y+c.y+temp.get(1).y)/3);
+        
+        cell c2 = new cell(1000000,p1.x,p1.y);
+        cell c3 = new cell(1000000,p2.x,p2.y);
+        
+        c2.vertices.add(this);
+        c2.vertices.add(c);
+        c2.vertices.add(temp.get(1));
+        
+        c3.vertices.add(this);
+        c3.vertices.add(c);
+        c3.vertices.add(temp.get(0));
+        
+        if(!delaunySites.contains(c2))delaunySites.add(c2);
+        if(!delaunySites.contains(c3))delaunySites.add(c3);
+      }
+    }
+  };
   
-  ArrayList<cell> getNeighbours2(int k){
+  ArrayList<cell> getNeighbours(int k){
     if(radiusN.size()<rounds){
       //r1 +=1;
       max = r1*Max;
-      //println("getN");
       range = r1;
       int r1 = range - (range - 4);
       int pos = gid;
@@ -346,7 +485,7 @@ class cell{
                   //if(d<k&&floor(i*1/cos((k+t*j)))%k1!=0&&floor(j*1/sin((k+t*i)))%k1!=0){
                   //if(d<k&&(i<xpos-r1||i>xpos+r1)||(j<ypos-r1||j>ypos+r1)){
                     //if(d<k&&d>(r1)){
-                      if(d<=k){
+                      if(d<k){
                 if(!neighbourGrid.contains(q))neighbourGrid.add(q);
               }
             }
@@ -362,7 +501,7 @@ class cell{
           
           if(c!=null&&c!=this){
             //float d = dist(x,y,c.x,c.y); 
-            if(!tconnections.contains(c)){
+            if(!tconnections.contains(c)&&!failed.contains(c)){
               //tradiusN.add(c);
               neighbours.add(c);
               
@@ -385,7 +524,6 @@ class cell{
     if(true){
       //r1 +=1;
       max = r1*Max;
-      //println("getN");
       range = r1;
       int r1 = range - (range - 4);
       int pos = gid;
@@ -441,11 +579,6 @@ class cell{
    
   };
   
-  void debugN(){
-    //for(int i=0;i<neighbours2.size();i++){
-    //  cell c = a.children.get(j);
-    //}
-  };
   
   void checkIsClosed(){
     int tcount = 0;
@@ -510,9 +643,6 @@ class cell{
     };
   };
   
-  //cell getNearest(ArrayList<cell>()){
-  //  cell k = 
-  //};
   
   void draw(){
     
@@ -522,148 +652,78 @@ class cell{
     strokeWeight(r/2);
     point(x,y);
     strokeWeight(1);
+    noFill();
+    if(pos())rect(minx,miny,maxx-minx,maxy-miny);
   };
   
-  void drawClosest(){
+  void drawVerticesD(){
     
-    //text(radiusN.size(),x+20,y);
-    //text(", "+tradiusN.size(),x+30,y);
-    text(closestN.size(),x+20,y+10);
+    fill(col);
+    //ellipse(x,y,r,r);
+    stroke(col);
+    strokeWeight(r/2);
+    point(x,y);
+    strokeWeight(1);
+    noFill();
+    if(p1==null){
+      p1 = new PVector(vertices.get(0).x,vertices.get(0).y);
+    }
+    if(p2==null){
+      p2 = new PVector(vertices.get(1).x,vertices.get(1).y);
+    }
+    if(p3==null){
+      p3 = new PVector(vertices.get(2).x,vertices.get(2).y);
+    }
+    stroke(0);
+    beginShape();
+    //vertex(x,y);
+    fill(col);
     
-    for(int i=0;i<closestN.size();i++){
-      cell c = closestN.get(i); 
-      stroke(col);
-      if(pos())
+    if(mousePressed)noFill();
+    //vertex(vertices.get(0).x,vertices.get(0).y);
+    //vertex(vertices.get(1).x,vertices.get(1).y);
+    //vertex(vertices.get(2).x,vertices.get(2).y);
+    vertex(p1.x,p1.y);
+    vertex(p2.x,p2.y);
+    vertex(p3.x,p3.y);
+    endShape(CLOSE);
+  };
+  
+  void drawContour(){
+    if(center);
+    for(int i=0;i<sconnections.size();i++){
+      cell c = sconnections.get(i);
+      cell c1 = null;
+      if(i<sconnections.size()-1)c1 = sconnections.get(i+1);
+      else c1 = sconnections.get(0);
       stroke(0);
-      strokeWeight(2);
-      line(x,y,c.x,c.y);
+      if(straggler)stroke(0,0,255);
+      strokeWeight(3);
+      line(c.x,c.y,c1.x,c1.y);
+      fill(0);
+      text(i,c.x+10,c.y);
     }
-    
-    for(int i=0;i<tradiusN.size();i++){
-      cell c = tradiusN.get(i); 
+  };
+  
+  void drawConnections(){
+    if(center);
+    for(int i=0;i<sconnections.size();i++){
+      cell c = sconnections.get(i);
+      stroke(255);
       
-      if(pos())
-      stroke(col);
-      strokeWeight(2);
-      line(x,y,c.x,c.y);
+      strokeWeight(1);
+      if(center&&pos()){
+        stroke(255,0,0);
+        strokeWeight(3);
+      }
+      line(c.x,c.y,x,y);
     }
-    
-    //for(int i=0;i<connections.size();i++){
-    //  cell c = connections.get(i); 
-    //  stroke(0);
-    //  strokeWeight(1);
-    //  line(x,y,c.x,c.y);
-    //}
   };
   
   boolean pos(){
     return dist(mouseX,mouseY,x,y)<=r;
   };
   
-  void verify(){
-    for(int k=0;k<neighbours.size();k++){
-      cell c1 = neighbours.get(k);
-      
-      if(!tconnections.contains(c1)){
-        boolean k1 = false;
-        Line A = new Line(this,c1);
-        for(int i= 0;i<tconnections.size();i++){
-        cell c2 = tconnections.get(i);
-          for(int j=0;j<c2.tconnections.size();j++){
-            cell c3 = c2.tconnections.get(j);
-            Line B = new Line(c1,c3);
-            PVector a = checkIntersect(A,B);
-            if(a!=null){
-              //float d1 = dist(a.x,a.y,d.x,d.y);
-              //float d2 = dist(a.x,a.y,x,y);
-              //if(!failed.contains(d))failed.add(d);
-              //if(d1>200&&d2>200){
-                k1 = true;
-                count ++;
-                
-                //break;
-            //}
-          }}
-        }
-        if(!k1){
-          
-          closestN.add(c1);
-          if(!linePair[c1.id].contains(this))linePair[c1.id].add(this);
-          if(!linePair[id].contains(c1))linePair[id].add(c1);
-          if(!connections.contains(c1)){
-            connections.add(c1);
-            tconnections.add(c1);
-            
-          }
-          if(!c1.tconnections.contains(this)){
-            c1.tconnections.add(this);
-            //d.connections.add(this);
-          }
-          if(!lines.get(c1).contains(this)&&!lines.get(this).contains(c1))lines.get(this).add(c1);
-        }
-      }
-      
-    }
-  };
-  
-  
-  void verify2(){
-    
-    for(int k=0;k<neighbours.size();k++){
-      cell d = neighbours.get(k);
-      if(!tconnections.contains(d)){
-      boolean k1 = false;
-      Line A = new Line(this,d);
-       count = 0;
-      for(int i= 0;i<tconnections.size();i++){
-        cell c = tconnections.get(i);
-        for(int j=0;j<c.tconnections.size();j++){
-          cell c1 = c.tconnections.get(j);
-          Line B = new Line(c,c1);
-          PVector a = checkIntersect(A,B);
-          if(a!=null){
-            float d1 = dist(a.x,a.y,d.x,d.y);
-            float d2 = dist(a.x,a.y,x,y);
-            if(!failed.contains(d))failed.add(d);
-            //if(d1>200&&d2>200){
-              k1 = true;
-              count ++;
-              
-              //break;
-          //}
-        }}
-      }
-        if(!k1){
-          
-          closestN.add(d);
-          if(!linePair[d.id].contains(this))linePair[d.id].add(this);
-          if(!linePair[id].contains(d))linePair[id].add(d);
-          if(!connections.contains(d)){
-            connections.add(d);
-            tconnections.add(d);
-            
-          }
-          if(!d.tconnections.contains(this)){
-            d.tconnections.add(this);
-            //d.connections.add(this);
-          }
-          if(!lines.get(d).contains(this)&&!lines.get(this).contains(d))lines.get(this).add(d);
-        }else d = null;
-        //println(count,radiusN.size());
-      if (count >= radiusN.size()-1){
-        noPaths = true;
-      }
-      }
-    }
-    //if(closestN.size()<2
-    //while(radiusN.size()==0&&neighbours.size()>0&&radiusN.contains(){
-    //  for(int i=0;i<neighbours.size();i++){
-        
-    //    if(tradiusN.contains(neighbours.get(i))){
-    //       tradiusN.contains(neighbours.get(i));
-    //    }
-    //}}
-  };
   
   
   
